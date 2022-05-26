@@ -1930,8 +1930,7 @@ class EventsWorkerStore(SQLBaseStore):
                 /* Check to make sure the event referencing our event in question is not rejected */
                 LEFT JOIN rejections ON event_edges.event_id = rejections.event_id
                 WHERE
-                    event_edges.room_id = ?
-                    AND event_edges.prev_event_id = ?
+                    event_edges.prev_event_id = ?
                     /* It's not a valid edge if the event referencing our event in
                      * question is rejected.
                      */
@@ -1947,7 +1946,7 @@ class EventsWorkerStore(SQLBaseStore):
             # latest messages in the room so asking other homeservers for more
             # is useless. The new latest messages will just be federated as
             # usual.
-            txn.execute(forward_extremity_query, (event.room_id, event.event_id))
+            txn.execute(forward_extremity_query, (event.event_id,))
             forward_extremities = txn.fetchall()
             if len(forward_extremities):
                 return False
