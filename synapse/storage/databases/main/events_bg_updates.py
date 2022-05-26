@@ -1367,8 +1367,14 @@ class EventsBackgroundUpdatesStore(SQLBaseStore):
                 args,
             )
 
+            logger.info(
+                "cleaned up event_edges up to %s: removed %i/%i rows",
+                endpoint,
+                txn.rowcount,
+                batch_size,
+            )
+
             if endpoint is not None:
-                logger.info("cleaned up event_edges up to %s", endpoint)
                 self.db_pool.updates._background_update_progress_txn(
                     txn,
                     _BackgroundUpdates.EVENT_EDGES_DROP_INVALID_ROWS,
