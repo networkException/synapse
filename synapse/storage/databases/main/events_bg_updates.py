@@ -1362,7 +1362,7 @@ class EventsBackgroundUpdatesStore(SQLBaseStore):
                    FROM event_edges ee
                      LEFT JOIN events ev USING (event_id)
                    WHERE ({where_clause}) AND
-                     (is_state OR ee.event_id IS NULL)
+                     (is_state OR ev.event_id IS NULL)
                 )""",
                 args,
             )
