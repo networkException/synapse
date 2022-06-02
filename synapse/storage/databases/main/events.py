@@ -2145,7 +2145,7 @@ class PersistEventsStore:
         data,
         start_topological_ordering,
         end_topological_ordering,
-        stream_orderings
+        stream_orderings,
     ) -> None:
         # Upsert the current receipt to give it a new endpoint as the
         # latest event in the range before the new event.
