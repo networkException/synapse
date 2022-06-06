@@ -696,6 +696,8 @@ class ReceiptsWorkerStore(SQLBaseStore):
         # XXX Do we care about stream ordering here?
         #
         # XXX This doesn't handle a start_topo_ordering of None.
+        #
+        # XXX This does not handle receipts which are adjacent, but non-overlapping.
         sql = """
         SELECT stream_id
         FROM receipts_ranged
