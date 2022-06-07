@@ -699,7 +699,12 @@ class ReceiptsWorkerStore(SQLBaseStore):
         #
         # XXX This does not handle receipts which are adjacent, but non-overlapping.
         sql = """
-        SELECT stream_id
+        SELECT
+            stream_id,
+            start_event_id,
+            start_event.topological_ordering,
+            end_event_id,
+            end_event.topological_ordering
         FROM receipts_ranged
         LEFT JOIN events AS end_event ON (end_event.event_id = end_event_id)
         LEFT JOIN events AS start_event ON (start_event.event_id = start_event_id)
@@ -712,16 +717,42 @@ class ReceiptsWorkerStore(SQLBaseStore):
         """
         txn.execute(
             sql,
-            (room_id, user_id, receipt_type, start_topo_ordering, end_topo_ordering),
+            (
+                room_id,
+                user_id,
+                receipt_type,
+                start_topo_ordering,
+                end_topo_ordering,
+            ),
         )
-        overlapping_receipts = [row[0] for row in txn.fetchall()]
+        overlapping_receipts = txn.fetchall()
+        # Delete the overlapping receipts by stream ID.
         self.db_pool.simple_delete_many_txn(
             txn,
             table="receipts_ranged",
             column="stream_id",
-            values=overlapping_receipts,
+            values=[receipt[0] for receipt in overlapping_receipts],
             keyvalues={},
         )
+
+        # Potentially expand the start/end event based on overlapping receipts.
+        for (
+            _,
+            overlapping_start_event_id,
+            overlapping_start_topo_ordering,
+            overlapping_end_event_id,
+            overlapping_end_topo_ordering,
+        ) in overlapping_receipts:
+            if (
+                start_topo_ordering is not None
+                and overlapping_start_topo_ordering < start_topo_ordering
+            ):
+                start_topo_ordering = overlapping_start_topo_ordering
+                start_event_id = overlapping_start_event_id
+
+            if end_topo_ordering < overlapping_end_topo_ordering:
+                end_topo_ordering = overlapping_end_topo_ordering
+                end_event_id = overlapping_end_event_id
 
         # Insert the new receipt into the table.
         self.db_pool.simple_insert_txn(
