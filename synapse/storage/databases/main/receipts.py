@@ -689,15 +689,23 @@ class ReceiptsWorkerStore(SQLBaseStore):
             self._receipts_stream_cache.entity_has_changed, room_id, stream_id
         )
 
-        # Find all overlapping receipts (by looking at receipts which have an
-        # end *after* the new receipt's start AND a start *before* the new receipt's
-        # end).
+        # Find all overlapping or adjacent receipts. These receipts are found by
+        # searching for any receipts which:
+        #
+        # * Have an end topological ordering directly before or after the new
+        #   receipt's start topological ordering.
+        # * Have a start topological ordering directly after or before the new
+        #   receipt's end topological ordering.
+        #
+        # E.g. the following would be found:
+        #
+        # * [1, 7] and [8, 10] should be combined.
+        # * [1, 7] and [5, 10] should be combined.
+        # * [None, 7] and [5, 10] should be combined.
         #
         # XXX Do we care about stream ordering here?
         #
         # XXX This doesn't handle a start_topo_ordering of None.
-        #
-        # XXX This does not handle receipts which are adjacent, but non-overlapping.
         sql = """
         SELECT
             stream_id,
@@ -721,8 +729,8 @@ class ReceiptsWorkerStore(SQLBaseStore):
                 room_id,
                 user_id,
                 receipt_type,
-                start_topo_ordering,
-                end_topo_ordering,
+                start_topo_ordering - 1,
+                end_topo_ordering + 1,
             ),
         )
         overlapping_receipts = txn.fetchall()
