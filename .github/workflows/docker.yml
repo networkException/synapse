@@ -46,6 +46,7 @@ jobs:
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' }}
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
             type=pep440,pattern={{raw}}
+            type=match,pattern=^v\d+\.\d+\.\d+$,value=stable
 
       - name: Build and push all platforms
         uses: docker/build-push-action@v2
